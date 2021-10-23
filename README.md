@@ -5,6 +5,6 @@
 
  字节在[Go 网络库上的实践](https://juejin.cn/post/6844904153173458958) 有提到相应的方案，
 
- 我根据自己业务代码的需求写nocopybuffer, 大概的原理跟bufio 很像，只是业务层代码读取业务报文时，是引用nocopybuffer底层buf的数据，不是拷贝，底层buf可以被多个业务报文引用，当底层buf被引用时，不可以修改底层buf.如果nocopybuffer需要再调用read读取内核数据时，需要从池里分配新的底层buf； 当底层buf没有被任何业务报文引用时，就把这个buf 释放会池里。
+ 我根据自己业务代码的需求写nocopybuffer, 大概的原理跟bufio 很像，只是业务层代码读取业务报文时，是引用nocopybuffer底层buf的数据，不是拷贝，底层buf可以被多个业务报文引用，当底层buf被引用时，不可以修改底层buf.如果nocopybuffer需要再调用read读取内核数据时，需要从池里分配新的底层buf； 当底层buf没有被任何业务报文引用时，就把这个buf 释放会池里。
 
  跟bufio标准库的区别是， bufio只有一个底层buf, 现在的nocopybuffer 可以有多个底层buf, 用链表联结起来, 底层buf的分配或释放都通过池来分配或释放。

@@ -1,9 +1,11 @@
 package main
 
+//TODO: test case
 import (
 	"fmt"
-	"learn/pkg/nocopybuffer"
 	"strings"
+
+	"github.com/jursonmo/nocopybuffer"
 )
 
 func main() {

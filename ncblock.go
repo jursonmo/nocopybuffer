@@ -89,10 +89,10 @@ func (ncb *NcBlock) canRelease() bool {
 	return atomic.AddInt32(&ncb.ref, -1) == 0
 }
 
-type BlockListOpt struct {
-	blockPool    Pool
-	blockBufSize int
-}
+// type BlockListOpt struct {
+// 	blockPool    Pool
+// 	blockBufSize int
+// }
 
 func NewBlockList(rd io.Reader, pool Pool) *BlockList {
 	if pool == nil {
@@ -171,7 +171,7 @@ func (bl *BlockList) GetPkg(n int) (*Pkg, error) {
 	pkg := allocPkg()
 	bl.allocPkgs++
 	//be here, means blocklist have enough data for pkg required
-	//if head blokc have have enough data for pkg required, pkg data just references head block underlay buf, don't copy
+	//if head blokc have have enough data for pkg required, pkg data just references head block's underlay buf, don't need to copy
 	head := bl.head
 	if head.Buffered() >= n {
 		pkg.data = head.buf[head.r : int(head.r)+n]
@@ -182,6 +182,7 @@ func (bl *BlockList) GetPkg(n int) (*Pkg, error) {
 		return pkg, nil
 	}
 
+	//be here, means we have to copy more than one block data to build the pkg's data, don't incr the block references counter
 	//到这里,表示需要跨block 取数据，那么就用copy 方式, 不需要递增block的引用计数
 	pkg.data = make([]byte, n) //TODO:use byteBufferPool
 	for copySum, cn := 0, 0; copySum < n; copySum += cn {

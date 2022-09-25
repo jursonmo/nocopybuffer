@@ -163,8 +163,8 @@ func (bl *BlockList) fill(n int) error {
 
 //获取指定大小的业务层报文
 func (bl *BlockList) GetPkg(n int) (*Pkg, error) {
-	bl.Lock()
-	defer bl.Unlock()
+	// bl.Lock() //we don't garante concurrent safe, just like bufio
+	// defer bl.Unlock()
 
 	//check if blockList have n bytes data
 	if !bl.have(n) {
@@ -179,7 +179,7 @@ func (bl *BlockList) GetPkg(n int) (*Pkg, error) {
 	//if head blokc have have enough data for pkg required, pkg data just references head block's underlay buf, don't need to copy
 	head := bl.head
 	if head.buffered() >= n {
-		pkg.data = head.buf[head.r : int(head.r)+n]
+		pkg.data = head.buf[head.r : int(head.r)+n] //pkg'data is just a reference of the underlay buf
 		pkg.block = head
 		pkg.Hold() //hold pkg self and hold block
 		head.r += int32(n)

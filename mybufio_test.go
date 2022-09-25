@@ -11,12 +11,17 @@ func TestGetPkg(t *testing.T) {
 	rd := bytes.NewBuffer(buf)
 	bl := NewBlockList(rd, NewPool(4))
 
-	pkg, err := bl.GetPkg(6)
+	pkgLen := 6
+	pkg, err := bl.GetPkg(pkgLen)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(pkg.Bytes(), buf[:6]) {
+	if len(pkg.Bytes()) != pkgLen {
+		t.Fatal("")
+	}
+
+	if !reflect.DeepEqual(pkg.Bytes(), buf[:pkgLen]) {
 		panic(pkg.Bytes())
 	}
 
@@ -25,16 +30,20 @@ func TestGetPkg(t *testing.T) {
 		panic(released)
 	}
 
-	pkg, err = bl.GetPkg(4)
+	pkg2Len := 4
+	pkg2, err := bl.GetPkg(pkg2Len)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	if !reflect.DeepEqual(pkg.Bytes(), buf[6:6+4]) {
-		t.Fatal(pkg.Bytes())
+	if len(pkg2.Bytes()) != pkg2Len {
+		t.Fatal("")
 	}
 
-	released = pkg.Release()
+	if !reflect.DeepEqual(pkg2.Bytes(), buf[pkgLen:pkgLen+pkg2Len]) {
+		t.Fatal(pkg2.Bytes())
+	}
+
+	released = pkg2.Release()
 	if released != true {
 		t.Fatalf("expect release ok, but :%v", released)
 	}
@@ -74,7 +83,7 @@ func TestClonePkg(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//clone it
+	//clone will alloc new pkg
 	pkg2 := pkg.Clone()
 	ok := pkg2.CanUpdateSafe()
 	if !ok {

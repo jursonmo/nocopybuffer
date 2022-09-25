@@ -63,7 +63,7 @@ func (pkg *Pkg) CanUpdateSafe() bool {
 	return pkg.block == nil && atomic.LoadInt32(&pkg.ref) == 1
 }
 
-//clone pkg data for update
+//clone pkg data for update, will alloc new object
 func (pkg *Pkg) Clone() *Pkg {
 	npkg := allocPkg()
 	npkg.data = make([]byte, len(pkg.data))

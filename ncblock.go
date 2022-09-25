@@ -161,7 +161,7 @@ func (bl *BlockList) fill(n int) error {
 	return err
 }
 
-//获取指定大小的业务层报文
+//获取指定大小的业务层报文, like io.ReadFull, block until we get the exactly n bytes pkg
 func (bl *BlockList) GetPkg(n int) (*Pkg, error) {
 	// bl.Lock() //we don't garante concurrent safe, just like bufio
 	// defer bl.Unlock()

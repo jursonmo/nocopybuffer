@@ -3,6 +3,7 @@ package nocopybuffer
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 )
 
 type Pool interface {
@@ -31,19 +32,19 @@ func NewPool(elemBufSize int) Pool {
 
 func (p *builtinPool) Put(x interface{}) {
 	p.Pool.Put(x)
-	p.putNum++
+	atomic.AddUint64(&p.putNum, 1)
 }
 func (p *builtinPool) Get() interface{} {
 	x := p.Pool.Get()
-	p.getNum++
+	atomic.AddUint64(&p.getNum, 1)
 	return x
 }
 func (p *builtinPool) PutNum() uint64 {
-	return p.putNum
+	return atomic.LoadUint64(&p.putNum)
 }
 func (p *builtinPool) GetNum() uint64 {
-	return p.getNum
+	return atomic.LoadUint64(&p.getNum)
 }
 func (p *builtinPool) String() string {
-	return fmt.Sprintf("putNum:%d, getNum:%d", p.putNum, p.getNum)
+	return fmt.Sprintf("putNum:%d, getNum:%d", atomic.LoadUint64(&p.putNum), atomic.LoadUint64(&p.getNum))
 }

@@ -3,6 +3,7 @@ package nocopybuffer
 import (
 	"fmt"
 	"io"
+	"sync"
 	"sync/atomic"
 )
 
@@ -11,6 +12,7 @@ const (
 )
 
 type BlockList struct {
+	sync.Mutex
 	head      *NcBlock
 	tail      *NcBlock
 	free      *NcBlock
@@ -21,7 +23,7 @@ type BlockList struct {
 }
 type stat struct {
 	copyNum     uint64 //需要跨block 取数据而发生copy 的次数
-	usedBlocks  uint64 //轮询用过多少给blocks(实际就是NewNcBlock 的调用次数)
+	usedBlocks  uint64 //轮询用过多少个blocks(实际就是NewNcBlock 的调用次数)
 	allocBlocks uint64 //how many block have allocated from Pool
 	allocPkgs   uint64 //how many block have generated
 }
@@ -65,7 +67,7 @@ func (ncb *NcBlock) String() string {
 		atomic.LoadInt32(&ncb.ref), ncb.r, ncb.w, ncb.size, ncb.next == nil)
 }
 
-func (ncb *NcBlock) Buffered() int {
+func (ncb *NcBlock) buffered() int {
 	return int(ncb.w - ncb.r)
 }
 
@@ -104,7 +106,7 @@ func NewBlockList(rd io.Reader, pool Pool) *BlockList {
 func (bl *BlockList) Buffered() int {
 	sum := 0
 	for cursor := bl.head; cursor != nil; cursor = cursor.next {
-		sum += cursor.Buffered()
+		sum += cursor.buffered()
 	}
 	return sum
 }
@@ -113,7 +115,7 @@ func (bl *BlockList) Buffered() int {
 func (bl *BlockList) have(n int) bool {
 	sum := 0
 	for cursor := bl.head; cursor != nil; cursor = cursor.next {
-		sum += cursor.Buffered()
+		sum += cursor.buffered()
 		if sum > n {
 			return true
 		}
@@ -161,6 +163,9 @@ func (bl *BlockList) fill(n int) error {
 
 //获取指定大小的业务层报文
 func (bl *BlockList) GetPkg(n int) (*Pkg, error) {
+	bl.Lock()
+	defer bl.Unlock()
+
 	//check if blockList have n bytes data
 	if !bl.have(n) {
 		if err := bl.fill(n - bl.Buffered()); err != nil {
@@ -173,7 +178,7 @@ func (bl *BlockList) GetPkg(n int) (*Pkg, error) {
 	//be here, means blocklist have enough data for pkg required
 	//if head blokc have have enough data for pkg required, pkg data just references head block's underlay buf, don't need to copy
 	head := bl.head
-	if head.Buffered() >= n {
+	if head.buffered() >= n {
 		pkg.data = head.buf[head.r : int(head.r)+n]
 		pkg.block = head
 		pkg.Hold() //hold pkg self and hold block

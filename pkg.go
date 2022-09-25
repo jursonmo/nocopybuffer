@@ -58,8 +58,8 @@ func (pkg *Pkg) Bytes() []byte {
 	return pkg.data
 }
 
-//pkg can update it's data when it does't reference any block underlay buf and pkg has only one owner .
-func (pkg *Pkg) CanUpdate() bool {
+//we can update pkg data safe when it is not a reference of any block underlay buf and the pkg has only one owner .
+func (pkg *Pkg) CanUpdateSafe() bool {
 	return pkg.block == nil && atomic.LoadInt32(&pkg.ref) == 1
 }
 

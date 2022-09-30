@@ -8,3 +8,21 @@
  我根据自己业务代码的需求写nocopybuffer, 大概的原理跟bufio 很像，只是业务层代码读取业务报文时，是引用nocopybuffer底层buf的数据，不是拷贝，底层buf可以被多个业务报文引用，当底层buf被引用时，不可以修改底层buf的内容.如果nocopybuffer需要再调用read读取内核数据时，需要从池里分配新的底层buf； 当底层buf没有被任何业务报文引用时，就把这个buf 释放会池里。
 
  跟bufio标准库的区别是， bufio只有一个底层buf, 现在的nocopybuffer 可以有多个底层buf, 用链表联结起来, 底层buf的分配或释放都通过池来分配或释放(如果底层buf 不再被业务层的pkg引用的情况下,会释放回池里), 增加底层buf 复用率和减少GC压力。
+
+
+``` 
+  if there are no pkg reference the buf, put back to pool   +-------------+
+| --------------------------------------------------------->| buffer Pool |
+|                                                           +-------------+
+|                                                                     |
+|    pkg1...pkgn          pkgn+1...pkgm          pkgm+1...            |
+|  +-------------+        +------------+        +------------+        |
+ --|   buf0      | <----->|   buf1     |<------>|   buf2     |  <-----|
+   +-------------+        +------------+        +------------+
+  big buffer list                                 ^
+                                                  |
+                                              io.Reader
+
+
+if app don't use pkg any more, must release pkg, it will make buf put back to buffer pool
+```
